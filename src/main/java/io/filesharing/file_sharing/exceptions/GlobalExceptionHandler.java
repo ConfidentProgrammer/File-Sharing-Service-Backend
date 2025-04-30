@@ -62,4 +62,12 @@ public class GlobalExceptionHandler {
                 HttpStatus.UNPROCESSABLE_ENTITY, LocalDateTime.now());
         return new ResponseEntity<>(errorResponse, HttpStatus.UNPROCESSABLE_ENTITY);
     }
+
+    @ExceptionHandler(DuplicateRandomIdException.class)
+    public ResponseEntity<ErrorResponse> DuplicateRandomIdException(DuplicateRandomIdException ex) {
+        logger.warn("Duplicated randomID exception: {}", ex.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(false, ex.getMessage().toString(),
+                HttpStatus.INTERNAL_SERVER_ERROR, LocalDateTime.now());
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }

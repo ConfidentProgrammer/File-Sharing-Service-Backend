@@ -30,9 +30,8 @@ public class FileSharingController {
     @PostMapping("/save-file")
     public ResponseEntity<SuccessResponse> saveFile(@RequestParam("file") MultipartFile file)
             throws FileStorageException, FileEmptyException {
-        fileShareService.storeFile(file);
-        System.out.println(uuidService.generateRandomId());
-        System.out.println(uuidService.generateTimeStampId());
+
+        fileShareService.processFile(file);
         SuccessResponse successResponse = new SuccessResponse(true, HttpStatus.CREATED, "File uploaded successfully");
         return new ResponseEntity<SuccessResponse>(successResponse, HttpStatus.CREATED);
     }
