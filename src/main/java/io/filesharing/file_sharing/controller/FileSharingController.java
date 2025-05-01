@@ -7,10 +7,8 @@ import io.filesharing.file_sharing.exceptions.FileEmptyException;
 import io.filesharing.file_sharing.exceptions.FileStorageException;
 import io.filesharing.file_sharing.response_structure.SuccessResponse;
 import io.filesharing.file_sharing.service.FileShareService;
-import io.filesharing.file_sharing.service.UuidService;
+import lombok.RequiredArgsConstructor;
 
-import org.hibernate.id.uuid.UuidGenerator;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -19,13 +17,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @RestController
 @RequestMapping("api/v1")
+@RequiredArgsConstructor
 public class FileSharingController {
 
-    @Autowired
-    private FileShareService fileShareService;
-
-    @Autowired
-    private UuidService uuidService;
+    private final FileShareService fileShareService;
 
     @PostMapping("/save-file")
     public ResponseEntity<SuccessResponse> saveFile(@RequestParam("file") MultipartFile file)

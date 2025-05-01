@@ -14,7 +14,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationAdapter;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import io.filesharing.file_sharing.exceptions.DuplicateRandomIdException;
@@ -81,33 +80,34 @@ public class FileShareService {
     }
 
     public String saveInDb(MultipartFile file) throws DuplicateRandomIdException {
-        Long timeStampid = uuidService.generateTimeStampId();
-        String randomId = generateRandomId();
+        Long timeStamp = uuidService.generateTimeStampId();
+        String random = generateId(timeStamp);
+        String id = timeStamp + "_" + random;
         try {
             File fileRecord = new File();
-            fileRecord.setId(timeStampid);
-            fileRecord.setRandomId(randomId);
-            fileRecord.setFileName(randomId + "_" + file.getOriginalFilename());
+            fileRecord.setId(id);
+            fileRecord.setFileName(random + "_" + file.getOriginalFilename());
             fileRecord.setUploadedAt(LocalDateTime.now());
             fileRecord.setDeletedAt(null);
             fileRecord.setExpiresAt(LocalDateTime.now().plusDays(7));
             fileShareRepository.save(fileRecord);
             logger.info("file record written to db");
-            return randomId;
+            return random;
         } catch (DataIntegrityViolationException e) {
             logger.error("DB constraint violated while saving file record, RandomID already exists", e);
             throw new DuplicateRandomIdException("randomId already exists");
         }
     }
 
-    public String generateRandomId() throws DuplicateRandomIdException {
+    public String generateId(long timeStamp) throws DuplicateRandomIdException {
         int retries = 3;
         for (int i = 0; i < retries; i++) {
-            String randomId = uuidService.generateRandomId();
-            if (!fileShareRepository.existsByRandomId(randomId)) {
-                return randomId;
+            String random = uuidService.generateRandomId();
+            String id = timeStamp + "_" + random;
+            if (!fileShareRepository.existsById(id)) {
+                return random;
             }
-            logger.error("Duplicate randomID found: {}", randomId);
+            logger.error("Duplicate randomID found: {}", random);
         }
         logger.error("Failed to generate Random Id after several attempts");
         throw new DuplicateRandomIdException("Failed to generate a unique random ID after several attempts");
