@@ -10,29 +10,30 @@ import java.time.LocalDateTime;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionSynchronization;
-import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.web.multipart.MultipartFile;
 import io.filesharing.file_sharing.exceptions.DuplicateRandomIdException;
 import io.filesharing.file_sharing.exceptions.FileEmptyException;
 import io.filesharing.file_sharing.exceptions.FileStorageException;
+import io.filesharing.file_sharing.exceptions.IdNotFoundException;
 import io.filesharing.file_sharing.model.File;
+import io.filesharing.file_sharing.properties.FileProperties;
 import io.filesharing.file_sharing.repository.FileShareRepository;
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
 public class FileShareService {
+    private final FileShareRepository fileShareRepository;
+    private final UuidService uuidService;
 
     private static final Logger logger = LoggerFactory.getLogger(FileShareService.class);
-    private static final String UPLOAD_DIR = "src/uploads"; // Set your directory here
 
-    private final FileShareRepository fileShareRepository;
-
-    private final UuidService uuidService;
+    @Value("${file.upload-dir}")
+    private String UPLOAD_DIR;
 
     public void storeFile(MultipartFile file, String randomId) throws FileStorageException, FileEmptyException {
         try {
@@ -58,24 +59,22 @@ public class FileShareService {
         return res;
     }
 
-    @Transactional
-    public void processFile(MultipartFile file) throws FileStorageException {
+    public void processFile(MultipartFile file) throws FileStorageException, FileEmptyException {
+        String id = null;
         try {
-            String randomId = saveInDb(file);
-            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
-                @Override
-                public void afterCommit() {
-                    try {
-                        storeFile(file, randomId);
-                    } catch (Exception e) {
-                        logger.error("Error while saving file: {}", e.getMessage(), e);
-                        // TODO: retry if storing file fails
-                    }
-                }
-            });
+            id = saveInDb(file);
+            String[] ids = id.split("_");
+            storeFile(file, ids[1]);
         } catch (Exception e) {
             logger.error("Failed to process file: {}", e.getMessage(), e);
+            try {
+                deleteDbRecordById(id);
+            } catch (Exception deleteException) {
+                logger.error("Rollback failed — couldn't delete DB record with id {}: {}", id,
+                        deleteException.getMessage(), deleteException);
+            }
             throw new FileStorageException("Failed to process file, reverted saving file", e);
+
         }
     }
 
@@ -92,10 +91,21 @@ public class FileShareService {
             fileRecord.setExpiresAt(LocalDateTime.now().plusDays(7));
             fileShareRepository.save(fileRecord);
             logger.info("file record written to db");
-            return random;
+            return id;
         } catch (DataIntegrityViolationException e) {
             logger.error("DB constraint violated while saving file record, RandomID already exists", e);
             throw new DuplicateRandomIdException("randomId already exists");
+        }
+    }
+
+    public void deleteDbRecordById(String id) throws IdNotFoundException {
+        try {
+            fileShareRepository.deleteById(id);
+            logger.info("File deleted successfully.");
+        } catch (EmptyResultDataAccessException e) {
+            throw new IdNotFoundException("File not found. Nothing to delete.");
+        } catch (Exception e) {
+            logger.error("Unexpected error while deleting file with id {}: {}", id, e.getMessage(), e);
         }
     }
 
