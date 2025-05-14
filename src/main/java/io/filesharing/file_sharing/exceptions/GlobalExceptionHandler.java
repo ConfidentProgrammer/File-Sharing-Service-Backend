@@ -70,4 +70,36 @@ public class GlobalExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR, LocalDateTime.now());
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    @ExceptionHandler(IdNotFoundException.class)
+    public ResponseEntity<ErrorResponse> IdNotFoundException(IdNotFoundException ex) {
+        logger.warn("Id not found exception: {}", ex.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(false, ex.getMessage().toString(),
+                HttpStatus.NOT_FOUND, LocalDateTime.now());
+        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(DeleteFileException.class)
+    public ResponseEntity<ErrorResponse> DeleteFileException(DeleteFileException ex) {
+        logger.warn("Deleting file exception: {}", ex.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(false, ex.getMessage().toString(),
+                HttpStatus.INTERNAL_SERVER_ERROR, LocalDateTime.now());
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(DeleteRecordException.class)
+    public ResponseEntity<ErrorResponse> DeleteRecordException(DeleteRecordException ex) {
+        logger.warn("Deleting records exception: {}", ex.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(false, ex.getMessage().toString(),
+                HttpStatus.INTERNAL_SERVER_ERROR, LocalDateTime.now());
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(FileExtensionNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> FileExtensionNotAllowedException(FileExtensionNotAllowedException ex) {
+        logger.warn("File extension not allowed: {}", ex.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(false, ex.getMessage().toString(),
+                HttpStatus.UNPROCESSABLE_ENTITY, LocalDateTime.now());
+        return new ResponseEntity<>(errorResponse, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
 }
