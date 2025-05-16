@@ -15,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.object.UpdatableSqlQuery;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import io.filesharing.file_sharing.exceptions.DuplicateRandomIdException;
@@ -49,12 +50,16 @@ public class FileShareService {
                 throw new FileEmptyException("Cannot upload empty file");
             }
             String fileName = getFileName(file.getOriginalFilename(), randomId);
+            Path uploadPath = Paths.get(UPLOAD_DIR);
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
             Path targetLocation = Paths.get(UPLOAD_DIR).resolve(fileName);
 
             try (InputStream inputStream = file.getInputStream()) {
                 Files.copy(inputStream, targetLocation, StandardCopyOption.REPLACE_EXISTING);
             }
-            logger.info("File uploaded successfully: {}", file.getOriginalFilename());
+            logger.info("File saved successfully: {}", file.getOriginalFilename());
         } catch (IOException e) {
             logger.error("Error while saving file: {}", e.getMessage(), e);
             throw new FileStorageException("Error while saving the file");
@@ -66,7 +71,7 @@ public class FileShareService {
         return res;
     }
 
-    public void processFile(MultipartFile file)
+    public String processFile(MultipartFile file)
             throws FileStorageException, FileEmptyException, FileExtensionNotAllowedException {
 
         String id = null;
@@ -79,7 +84,8 @@ public class FileShareService {
             id = saveInDb(file);
             String[] ids = id.split("_");
             storeFile(file, ids[1]);
-
+            logger.info("File and file record saved successfully: {}", file.getOriginalFilename());
+            return id;
         } catch (Exception e) {
             logger.error("Failed to process file: {}", e.getMessage(), e);
             try {

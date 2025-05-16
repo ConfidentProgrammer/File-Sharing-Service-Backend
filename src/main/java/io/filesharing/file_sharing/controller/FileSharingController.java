@@ -2,6 +2,7 @@ package io.filesharing.file_sharing.controller;
 
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import io.filesharing.file_sharing.exceptions.DeleteFileException;
 import io.filesharing.file_sharing.exceptions.DeleteRecordException;
@@ -41,8 +42,11 @@ public class FileSharingController {
     public ResponseEntity<SuccessResponse> saveFile(@RequestParam("file") MultipartFile file)
             throws FileStorageException, FileEmptyException, FileExtensionNotAllowedException {
 
-        fileShareService.processFile(file);
-        SuccessResponse successResponse = new SuccessResponse(true, HttpStatus.CREATED, "File uploaded successfully");
+        String id = fileShareService.processFile(file);
+        String baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString();
+        String downloadLink = String.format("%s/api/v1/file/%s/download", baseUrl, id); // baseUrl+"/file/";
+        SuccessResponse successResponse = new SuccessResponse(true, HttpStatus.CREATED,
+                "File uploaded successfully, File download link: " + downloadLink);
         return new ResponseEntity<SuccessResponse>(successResponse, HttpStatus.CREATED);
     }
 
@@ -71,4 +75,5 @@ public class FileSharingController {
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFilename() + "\"")
                 .body(file);
     }
+
 }
