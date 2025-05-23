@@ -102,4 +102,12 @@ public class GlobalExceptionHandler {
                 HttpStatus.UNPROCESSABLE_ENTITY, LocalDateTime.now());
         return new ResponseEntity<>(errorResponse, HttpStatus.UNPROCESSABLE_ENTITY);
     }
+
+    @ExceptionHandler(TokenStorageException.class)
+    public ResponseEntity<ErrorResponse> TokenStorageException(TokenStorageException ex) {
+        logger.warn("Error while creating token: {}", ex.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(false, ex.getMessage().toString(),
+                HttpStatus.UNPROCESSABLE_ENTITY, LocalDateTime.now());
+        return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }

@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile.app
     container_name: fileshare-app
+    image: deepp2618/fileshare-app:latest
+    platform: 'linux/amd64'
     ports:
       - "8080:8080"
     depends_on:

@@ -15,15 +15,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.jdbc.object.UpdatableSqlQuery;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+
 import io.filesharing.file_sharing.exceptions.DuplicateRandomIdException;
 import io.filesharing.file_sharing.exceptions.FileEmptyException;
 import io.filesharing.file_sharing.exceptions.FileExtensionNotAllowedException;
 import io.filesharing.file_sharing.exceptions.FileStorageException;
 import io.filesharing.file_sharing.exceptions.IdNotFoundException;
 import io.filesharing.file_sharing.model.File;
+import io.filesharing.file_sharing.model.Token;
 import io.filesharing.file_sharing.repository.FileShareRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.*;
@@ -34,6 +35,7 @@ public class FileShareService {
     private final FileShareRepository fileShareRepository;
     private final UuidService uuidService;
     private final FileCleanupService fileCleanupService;
+    private final TokenService tokenService;
 
     private static final Logger logger = LoggerFactory.getLogger(FileShareService.class);
 
@@ -81,10 +83,14 @@ public class FileShareService {
         }
         try {
 
-            id = saveInDb(file);
-            String[] ids = id.split("_");
+            File fileRecord = saveInDb(file);
+            id = fileRecord.getId();
+            String[] ids = fileRecord.getId().split("_");
             storeFile(file, ids[1]);
             logger.info("File and file record saved successfully: {}", file.getOriginalFilename());
+            Token token = tokenService.createTokenRecord(fileRecord);
+            logger.info("Token record saved successfully: {}", token.getId());
+
             return id;
         } catch (Exception e) {
             logger.error("Failed to process file: {}", e.getMessage(), e);
@@ -107,7 +113,7 @@ public class FileShareService {
         return true;
     }
 
-    public String saveInDb(MultipartFile file) throws DuplicateRandomIdException {
+    public File saveInDb(MultipartFile file) throws DuplicateRandomIdException {
         Long timeStamp = uuidService.generateTimeStampId();
         String random = generateId(timeStamp);
         String id = timeStamp + "_" + random;
@@ -120,7 +126,7 @@ public class FileShareService {
             fileRecord.setExpiresAt(LocalDateTime.now().plusDays(7));
             fileShareRepository.save(fileRecord);
             logger.info("file record written to db");
-            return id;
+            return fileRecord;
         } catch (DataIntegrityViolationException e) {
             logger.error("DB constraint violated while saving file record, RandomID already exists", e);
             throw new DuplicateRandomIdException("randomId already exists");

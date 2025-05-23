@@ -64,7 +64,6 @@ public class FileCleanupService {
         } catch (IOException e) {
             logger.error("Error while deleting specific file", e.getMessage(), e);
         }
-
     }
 
     public void deleteDbRecordById(String id) throws IdNotFoundException {
