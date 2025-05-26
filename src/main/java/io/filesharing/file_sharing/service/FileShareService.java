@@ -42,9 +42,6 @@ public class FileShareService {
     @Value("${file.upload-dir}")
     private String UPLOAD_DIR;
 
-    @Value("#{'${file.allowed-extensions}'.split(',')}")
-    private List<String> allowedExtensions;
-
     public void storeFile(MultipartFile file, String randomId) throws FileStorageException, FileEmptyException {
         try {
             if (file.isEmpty()) {
@@ -71,46 +68,6 @@ public class FileShareService {
     private String getFileName(String originalFileName, String randomId) {
         String res = randomId + "_" + originalFileName;
         return res;
-    }
-
-    public String processFile(MultipartFile file)
-            throws FileStorageException, FileEmptyException, FileExtensionNotAllowedException {
-
-        String id = null;
-        if (!checkFileExtensions(file.getOriginalFilename())) {
-            logger.error("File extension not allowed");
-            throw new FileExtensionNotAllowedException("File extension not allowed");
-        }
-        try {
-
-            File fileRecord = saveInDb(file);
-            id = fileRecord.getId();
-            String[] ids = fileRecord.getId().split("_");
-            storeFile(file, ids[1]);
-            logger.info("File and file record saved successfully: {}", file.getOriginalFilename());
-            Token token = tokenService.createTokenRecord(fileRecord);
-            logger.info("Token record saved successfully: {}", token.getId());
-
-            return id;
-        } catch (Exception e) {
-            logger.error("Failed to process file: {}", e.getMessage(), e);
-            try {
-                fileCleanupService.deleteDbRecordById(id);
-            } catch (Exception deleteException) {
-                logger.error("Rollback failed — couldn't delete DB record with id {}: {}", id,
-                        deleteException.getMessage(), deleteException);
-            }
-            throw new FileStorageException("Failed to process file, reverted saving file", e);
-        }
-    }
-
-    public boolean checkFileExtensions(String fileName) {
-        String[] names = fileName.split("\\.");
-        String extension = names[names.length - 1].toLowerCase();
-        if (!allowedExtensions.contains(extension)) {
-            return false;
-        }
-        return true;
     }
 
     public File saveInDb(MultipartFile file) throws DuplicateRandomIdException {

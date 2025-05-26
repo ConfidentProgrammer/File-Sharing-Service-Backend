@@ -110,4 +110,12 @@ public class GlobalExceptionHandler {
                 HttpStatus.UNPROCESSABLE_ENTITY, LocalDateTime.now());
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
+
+    @ExceptionHandler(TokenNotFoundException.class)
+    public ResponseEntity<ErrorResponse> TokenNotFoundException(TokenNotFoundException ex) {
+        logger.warn("Token not found in the db: {}", ex.getMessage());
+        ErrorResponse errorResponse = new ErrorResponse(false, ex.getMessage().toString(),
+                HttpStatus.NOT_FOUND, LocalDateTime.now());
+        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+    }
 }

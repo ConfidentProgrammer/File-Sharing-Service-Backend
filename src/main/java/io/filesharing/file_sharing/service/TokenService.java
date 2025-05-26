@@ -1,11 +1,13 @@
 package io.filesharing.file_sharing.service;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import io.filesharing.file_sharing.exceptions.TokenNotFoundException;
 import io.filesharing.file_sharing.exceptions.TokenStorageException;
 import io.filesharing.file_sharing.model.File;
 import io.filesharing.file_sharing.model.Token;
@@ -32,6 +34,13 @@ public class TokenService {
             logger.error("DB error while saving token in the DB", e);
             throw new TokenStorageException("Error while creating token for download link");
         }
+    }
+
+    public String getFileIdFromTokenId(String tokenId) throws TokenNotFoundException {
+        Token token = tokenRepository.findById(tokenId)
+                .orElseThrow(() -> new TokenNotFoundException("cannot find file from the link"));
+        logger.error("Cannot find token from token ID");
+        return token.getFile().getId();
     }
 
     public String getTokenID(String fileId) {

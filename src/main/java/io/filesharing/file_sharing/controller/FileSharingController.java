@@ -4,29 +4,26 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import io.filesharing.file_sharing.dto.UploadResult;
 import io.filesharing.file_sharing.exceptions.DeleteFileException;
 import io.filesharing.file_sharing.exceptions.DeleteRecordException;
 import io.filesharing.file_sharing.exceptions.FileEmptyException;
 import io.filesharing.file_sharing.exceptions.FileExtensionNotAllowedException;
 import io.filesharing.file_sharing.exceptions.FileStorageException;
 import io.filesharing.file_sharing.exceptions.IdNotFoundException;
+import io.filesharing.file_sharing.orchestrators.FileShareOrchestrator;
 import io.filesharing.file_sharing.response_structure.SuccessResponse;
 import io.filesharing.file_sharing.service.FileCleanupService;
 import io.filesharing.file_sharing.service.FileShareService;
 import io.filesharing.file_sharing.service.TokenService;
 import lombok.RequiredArgsConstructor;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.MalformedURLException;
 
-import org.springframework.core.io.Resource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,17 +33,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 @RequiredArgsConstructor
 public class FileSharingController {
 
-        private final FileShareService fileShareService;
         private final FileCleanupService fileCleanupService;
-        private final TokenService tokenService;
+        private final FileShareOrchestrator uploadFileOrchestrator;
 
         @PostMapping("/upload-file")
         public ResponseEntity<SuccessResponse> saveFile(@RequestParam("file") MultipartFile file)
                         throws FileStorageException, FileEmptyException, FileExtensionNotAllowedException {
 
-                String id = fileShareService.processFile(file);
-                String token = tokenService.getTokenID(id);
-                String downloadLink = getLink(token);
+                UploadResult uploadResult = uploadFileOrchestrator.uploadFile(file);
+                String downloadLink = getLink(uploadResult.getTokenId());
                 SuccessResponse successResponse = new SuccessResponse(true, HttpStatus.CREATED,
                                 "File uploaded successfully, File download link: " + downloadLink);
                 return new ResponseEntity<SuccessResponse>(successResponse, HttpStatus.CREATED);
@@ -68,16 +63,6 @@ public class FileSharingController {
                 SuccessResponse successResponse = new SuccessResponse(true, HttpStatus.OK,
                                 "File " + id + " and DB record deleted successfully");
                 return new ResponseEntity<SuccessResponse>(successResponse, HttpStatus.OK);
-        }
-
-        @GetMapping("/file/{id}/download")
-        public ResponseEntity<Resource> getFile(@PathVariable String id)
-                        throws FileNotFoundException, MalformedURLException, IdNotFoundException {
-                Resource file = fileShareService.getFileById(id);
-                return ResponseEntity.ok()
-                                .header(HttpHeaders.CONTENT_DISPOSITION,
-                                                "attachment; filename=\"" + file.getFilename() + "\"")
-                                .body(file);
         }
 
         public String getLink(String endpoint) {
