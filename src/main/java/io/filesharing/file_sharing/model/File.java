@@ -2,11 +2,7 @@ package io.filesharing.file_sharing.model;
 
 import java.time.LocalDateTime;
 
-import jakarta.persistence.CascadeType;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToOne;
+import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,6 +13,9 @@ import lombok.Setter;
 @AllArgsConstructor
 @Entity
 @NoArgsConstructor
+@Table(name = "file", indexes = {
+        @Index(name = "idx_file_id", columnList = "id"),
+})
 public class File {
     @Id
     @Column(unique = true)

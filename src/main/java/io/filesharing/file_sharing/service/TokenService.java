@@ -1,7 +1,6 @@
 package io.filesharing.file_sharing.service;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +38,6 @@ public class TokenService {
     public String getFileIdFromTokenId(String tokenId) throws TokenNotFoundException {
         Token token = tokenRepository.findById(tokenId)
                 .orElseThrow(() -> new TokenNotFoundException("cannot find file from the link"));
-        logger.error("Cannot find token from token ID");
         return token.getFile().getId();
     }
 

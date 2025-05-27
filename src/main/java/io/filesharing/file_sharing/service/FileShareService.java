@@ -34,8 +34,6 @@ import org.springframework.core.io.*;
 public class FileShareService {
     private final FileShareRepository fileShareRepository;
     private final UuidService uuidService;
-    private final FileCleanupService fileCleanupService;
-    private final TokenService tokenService;
 
     private static final Logger logger = LoggerFactory.getLogger(FileShareService.class);
 
